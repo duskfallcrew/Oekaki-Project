@@ -97,14 +97,11 @@ class OekakiApp(QMainWindow):
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
+        main_layout = QVBoxLayout(central_widget)
         
-        # Side toolbar for settings
-        side_toolbar = QVBoxLayout()
-
-        # Adding top toolbar layout within side toolbar layout to align them side by side
-        top_toolbar = QVBoxLayout()
-
+        # Top toolbar
+        top_toolbar = QHBoxLayout()
+        
         color_button = QPushButton("Change Color")
         color_button.clicked.connect(self.change_color)
         top_toolbar.addWidget(color_button)
@@ -120,9 +117,12 @@ class OekakiApp(QMainWindow):
         save_button = QPushButton("Save")
         save_button.clicked.connect(self.save_image)
         top_toolbar.addWidget(save_button)
+        
+        main_layout.addLayout(top_toolbar)
 
-        side_toolbar.addLayout(top_toolbar)
-
+        # Side toolbar
+        side_toolbar = QVBoxLayout()
+        
         size_slider = QSlider(Qt.Orientation.Horizontal)
         size_slider.setRange(1, 50)
         size_slider.setValue(5)
@@ -155,7 +155,6 @@ class OekakiApp(QMainWindow):
 
         main_layout.addLayout(side_toolbar)
 
-        # Canvas in the center
         main_layout.addWidget(self.canvas)
 
         # Color Mixing Area
@@ -203,10 +202,16 @@ class OekakiApp(QMainWindow):
     def set_fixed_size_based_on_canvas(self):
         # Get the canvas size and set the main window size accordingly
         canvas_size = self.canvas.size()
-        frame_geometry = self.frameGeometry()
-        frame_width = frame_geometry.width() - self.centralWidget().geometry().width()
-        frame_height = frame_geometry.height() - self.centralWidget().geometry().height()
-        self.setFixedSize(canvas_size.width() + frame_width, canvas_size.height() + frame_height)
+        top_toolbar_height = 40  # Estimated height of top toolbar
+        side_toolbar_width = 200  # Estimated width of side toolbar
+        color_mixing_area_height = 200  # Fixed size as set
+        margin = 20  # Margin to ensure the window is not too tight
+
+        # Calculate total window size
+        window_width = canvas_size.width() + side_toolbar_width + margin
+        window_height = canvas_size.height() + top_toolbar_height + color_mixing_area_height + margin
+
+        self.setFixedSize(window_width, window_height)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
