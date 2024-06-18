@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, 
                              QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame)
-from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QIcon
+from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor
 from PyQt6.QtCore import Qt, QPoint
 
 class OekakiCanvas(QWidget):
@@ -97,32 +97,27 @@ class OekakiApp(QMainWindow):
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
+        main_layout = QHBoxLayout(central_widget)
         
-        # Top toolbar
-        top_toolbar = QHBoxLayout()
-        
-        color_button = QPushButton("Change Color")
-        color_button.clicked.connect(self.change_color)
-        top_toolbar.addWidget(color_button)
-
-        clear_button = QPushButton("Clear")
-        clear_button.clicked.connect(self.canvas.clear_canvas)
-        top_toolbar.addWidget(clear_button)
-
-        undo_button = QPushButton("Undo")
-        undo_button.clicked.connect(self.canvas.undo)
-        top_toolbar.addWidget(undo_button)
-
-        save_button = QPushButton("Save")
-        save_button.clicked.connect(self.save_image)
-        top_toolbar.addWidget(save_button)
-        
-        main_layout.addLayout(top_toolbar)
-
         # Side toolbar
         side_toolbar = QVBoxLayout()
         
+        color_button = QPushButton("Change Color")
+        color_button.clicked.connect(self.change_color)
+        side_toolbar.addWidget(color_button)
+
+        clear_button = QPushButton("Clear")
+        clear_button.clicked.connect(self.canvas.clear_canvas)
+        side_toolbar.addWidget(clear_button)
+
+        undo_button = QPushButton("Undo")
+        undo_button.clicked.connect(self.canvas.undo)
+        side_toolbar.addWidget(undo_button)
+
+        save_button = QPushButton("Save")
+        save_button.clicked.connect(self.save_image)
+        side_toolbar.addWidget(save_button)
+
         size_slider = QSlider(Qt.Orientation.Horizontal)
         size_slider.setRange(1, 50)
         size_slider.setValue(5)
@@ -155,16 +150,19 @@ class OekakiApp(QMainWindow):
 
         main_layout.addLayout(side_toolbar)
 
+        # Canvas in the center
         main_layout.addWidget(self.canvas)
 
         # Color Mixing Area
+        color_mixing_layout = QVBoxLayout()
         self.color_mixing_area = QFrame()
         self.color_mixing_area.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
         self.color_mixing_area.setLineWidth(2)
         self.color_mixing_area.setStyleSheet("background-color: white;")
-        main_layout.addWidget(self.color_mixing_area)
+        color_mixing_layout.addWidget(self.color_mixing_area)
         self.color_mixing_area.setFixedSize(200, 200)
         self.color_mixing_area.setToolTip("Use this area to mix colors")
+        main_layout.addLayout(color_mixing_layout)
 
     def change_color(self):
         color = QColorDialog.getColor()
@@ -204,12 +202,12 @@ class OekakiApp(QMainWindow):
         canvas_size = self.canvas.size()
         top_toolbar_height = 40  # Estimated height of top toolbar
         side_toolbar_width = 200  # Estimated width of side toolbar
-        color_mixing_area_height = 200  # Fixed size as set
+        color_mixing_area_width = 200  # Fixed size as set
         margin = 20  # Margin to ensure the window is not too tight
 
         # Calculate total window size
-        window_width = canvas_size.width() + side_toolbar_width + margin
-        window_height = canvas_size.height() + top_toolbar_height + color_mixing_area_height + margin
+        window_width = canvas_size.width() + side_toolbar_width + color_mixing_area_width + margin
+        window_height = canvas_size.height() + top_toolbar_height + margin
 
         self.setFixedSize(window_width, window_height)
 
