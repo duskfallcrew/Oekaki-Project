@@ -1,6 +1,32 @@
 # Oekaki-Project
 A project opting to make an Oekaki styled program that's lightweight and open source. 
-<img width="1480" alt="Screenshot 2024-06-18 at 17 28 10" src="https://github.com/duskfallcrew/Oekaki-Project/assets/58930427/8cf0d8f5-5b44-439c-bc1c-390b1ec4faa1">
+
+<img width="1704" alt="Screenshot 2024-06-18 at 18 19 33" src="https://github.com/duskfallcrew/Oekaki-Project/assets/58930427/976fc5bb-35ae-4f1f-8217-5bc08687c959">
+
+## Installation
+
+#### Instructions for Users
+
+Install Python: Make sure Python is installed on your system. You can download it from python.org.
+
+Clone the Repository: Download or clone the repository that contains your Oekaki application.
+
+It's reccomended if you're a nerd to use Git clone 
+
+However, for this instance, just download the code as a zip file and unzip into a new folder.
+
+Install Dependencies: Install the required Python packages using pip. This will install PyQt6, which is used for the GUI.
+
+pip install pyqt6
+
+Run the Application: Once the dependencies are installed, you can run the Oekaki application.
+
+python oekaki.py
+
+#### Explanation:
+
+PyQt6: This package is essential for building the GUI of the application.
+
 
 ## Plans
 
@@ -11,10 +37,7 @@ A project opting to make an Oekaki styled program that's lightweight and open so
 - Possibly have callbacks for social media sharing.
 
 ## Current Issues
-- Cursor movement doesn't match where the brush goes
-- Canvas DOES resize with window, but i'm not sure we want that  as it causes some issues in the UI/UX
-- Brushes don't do much YET
-- Unsure what needs to be imported for end user as we have most of the imports installed.
+All current issues have been solved, just working on long term things. Consider this an always work in progress!
 
 ## Next Steps
 
