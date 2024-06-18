@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, 
-                             QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame, QScrollArea)
+                             QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame)
 from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QIcon
 from PyQt6.QtCore import Qt, QPoint
 
@@ -97,70 +97,72 @@ class OekakiApp(QMainWindow):
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        layout = QVBoxLayout()
-        central_widget.setLayout(layout)
-
-        button_scroll_area = QScrollArea()
-        button_scroll_area.setWidgetResizable(True)
-        button_container = QWidget()
-        button_layout = QVBoxLayout(button_container)
-        button_scroll_area.setWidget(button_container)
-        layout.addWidget(button_scroll_area)
-
+        main_layout = QVBoxLayout(central_widget)
+        
+        # Top toolbar
+        top_toolbar = QHBoxLayout()
+        
         color_button = QPushButton("Change Color")
         color_button.clicked.connect(self.change_color)
-        button_layout.addWidget(color_button)
+        top_toolbar.addWidget(color_button)
 
         clear_button = QPushButton("Clear")
         clear_button.clicked.connect(self.canvas.clear_canvas)
-        button_layout.addWidget(clear_button)
+        top_toolbar.addWidget(clear_button)
 
         undo_button = QPushButton("Undo")
         undo_button.clicked.connect(self.canvas.undo)
-        button_layout.addWidget(undo_button)
+        top_toolbar.addWidget(undo_button)
 
         save_button = QPushButton("Save")
         save_button.clicked.connect(self.save_image)
-        button_layout.addWidget(save_button)
+        top_toolbar.addWidget(save_button)
+        
+        main_layout.addLayout(top_toolbar)
 
+        # Side toolbar
+        side_toolbar = QVBoxLayout()
+        
         size_slider = QSlider(Qt.Orientation.Horizontal)
         size_slider.setRange(1, 50)
         size_slider.setValue(5)
         size_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         size_slider.valueChanged.connect(self.change_brush_size)
-        button_layout.addWidget(QLabel("Brush Size"))
-        button_layout.addWidget(size_slider)
+        side_toolbar.addWidget(QLabel("Brush Size"))
+        side_toolbar.addWidget(size_slider)
 
         shape_combo = QComboBox()
         shape_combo.addItems(["Round", "Square"])
         shape_combo.currentTextChanged.connect(self.change_brush_shape)
-        button_layout.addWidget(QLabel("Brush Shape"))
-        button_layout.addWidget(shape_combo)
+        side_toolbar.addWidget(QLabel("Brush Shape"))
+        side_toolbar.addWidget(shape_combo)
 
         tool_combo = QComboBox()
         tool_combo.addItems(["Pencil", "Pen", "Ink", "Paint", "Airbrush"])
         tool_combo.currentTextChanged.connect(self.change_tool)
-        button_layout.addWidget(QLabel("Tool"))
-        button_layout.addWidget(tool_combo)
+        side_toolbar.addWidget(QLabel("Tool"))
+        side_toolbar.addWidget(tool_combo)
 
         custom_brush_button = QPushButton("Load Custom Brush")
         custom_brush_button.clicked.connect(self.load_custom_brush)
-        button_layout.addWidget(custom_brush_button)
+        side_toolbar.addWidget(custom_brush_button)
 
         canvas_size_combo = QComboBox()
         canvas_size_combo.addItems(["800x600", "1024x768", "1280x720", "1920x1080", "600x600", "512x512", "1024x1024"])
         canvas_size_combo.currentTextChanged.connect(self.change_canvas_size)
-        button_layout.addWidget(QLabel("Canvas Size"))
-        button_layout.addWidget(canvas_size_combo)
+        side_toolbar.addWidget(QLabel("Canvas Size"))
+        side_toolbar.addWidget(canvas_size_combo)
 
-        layout.addWidget(self.canvas)
+        main_layout.addLayout(side_toolbar)
+
+        main_layout.addWidget(self.canvas)
 
         # Color Mixing Area
         self.color_mixing_area = QFrame()
         self.color_mixing_area.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
         self.color_mixing_area.setLineWidth(2)
         self.color_mixing_area.setStyleSheet("background-color: white;")
-        layout.addWidget(self.color_mixing_area)
+        main_layout.addWidget(self.color_mixing_area)
         self.color_mixing_area.setFixedSize(200, 200)
         self.color_mixing_area.setToolTip("Use this area to mix colors")
 
