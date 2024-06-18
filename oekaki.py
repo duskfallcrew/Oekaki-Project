@@ -1,8 +1,7 @@
-import os
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, 
                              QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame)
-from PyQt6.QtGui import QPainter, QPen, QMouseEvent, QPixmap, QColor, QImage, QIcon
+from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QIcon
 from PyQt6.QtCore import Qt, QPoint
 
 class OekakiCanvas(QWidget):
@@ -34,11 +33,14 @@ class OekakiCanvas(QWidget):
             painter = QPainter(self.image)
             pen = QPen(self.brush_color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
             painter.setPen(pen)
+            cursor_point = event.position().toPoint()
             if self.custom_brush:
-                painter.drawPixmap(event.position().toPoint(), self.custom_brush.scaled(self.brush_size, self.brush_size))
+                brush_half_size = self.brush_size // 2
+                painter.drawPixmap(cursor_point.x() - brush_half_size, cursor_point.y() - brush_half_size,
+                                   self.custom_brush.scaled(self.brush_size, self.brush_size))
             else:
-                painter.drawLine(self.last_point, event.position().toPoint())
-            self.last_point = event.position().toPoint()
+                painter.drawLine(self.last_point, cursor_point)
+            self.last_point = cursor_point
             self.update()
 
     def mouseReleaseEvent(self, event):
@@ -79,6 +81,7 @@ class OekakiCanvas(QWidget):
             self.update()
 
     def set_canvas_size(self, width, height):
+        self.setFixedSize(width, height)
         self.image = QPixmap(width, height)
         self.image.fill(Qt.GlobalColor.white)
         self.update()
@@ -89,6 +92,7 @@ class OekakiApp(QMainWindow):
         self.setWindowTitle("Earth & Dusk's Oekaki App")
         self.canvas = OekakiCanvas()
         self.init_ui()
+        self.set_fixed_size_based_on_canvas()
 
     def init_ui(self):
         central_widget = QWidget()
@@ -187,6 +191,15 @@ class OekakiApp(QMainWindow):
     def change_canvas_size(self, size):
         width, height = map(int, size.split('x'))
         self.canvas.set_canvas_size(width, height)
+        self.set_fixed_size_based_on_canvas()
+
+    def set_fixed_size_based_on_canvas(self):
+        # Get the canvas size and set the main window size accordingly
+        canvas_size = self.canvas.size()
+        frame_geometry = self.frameGeometry()
+        frame_width = frame_geometry.width() - self.centralWidget().geometry().width()
+        frame_height = frame_geometry.height() - self.centralWidget().geometry().height()
+        self.setFixedSize(canvas_size.width() + frame_width, canvas_size.height() + frame_height)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
