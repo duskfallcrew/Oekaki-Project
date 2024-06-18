@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, 
-                             QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame)
+                             QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame, QScrollArea)
 from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QIcon
 from PyQt6.QtCore import Qt, QPoint
 
@@ -100,8 +100,12 @@ class OekakiApp(QMainWindow):
         layout = QVBoxLayout()
         central_widget.setLayout(layout)
 
-        button_layout = QHBoxLayout()
-        layout.addLayout(button_layout)
+        button_scroll_area = QScrollArea()
+        button_scroll_area.setWidgetResizable(True)
+        button_container = QWidget()
+        button_layout = QVBoxLayout(button_container)
+        button_scroll_area.setWidget(button_container)
+        layout.addWidget(button_scroll_area)
 
         color_button = QPushButton("Change Color")
         color_button.clicked.connect(self.change_color)
@@ -144,7 +148,7 @@ class OekakiApp(QMainWindow):
         button_layout.addWidget(custom_brush_button)
 
         canvas_size_combo = QComboBox()
-        canvas_size_combo.addItems(["800x600", "1024x768", "1280x720", "1920x1080", "600x600"])
+        canvas_size_combo.addItems(["800x600", "1024x768", "1280x720", "1920x1080", "600x600", "512x512", "1024x1024"])
         canvas_size_combo.currentTextChanged.connect(self.change_canvas_size)
         button_layout.addWidget(QLabel("Canvas Size"))
         button_layout.addWidget(canvas_size_combo)
