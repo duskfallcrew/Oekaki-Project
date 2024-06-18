@@ -23,6 +23,10 @@ Run the Application: Once the dependencies are installed, you can run the Oekaki
 
 python oekaki.py
 
+#### HELP! My canvas isn't here!
+
+Select a canvas size in the left hand toolbar, and it will automatically resize the window. Please note, the color mixing box is not implimented yet.
+
 #### Explanation:
 
 PyQt6: This package is essential for building the GUI of the application.
