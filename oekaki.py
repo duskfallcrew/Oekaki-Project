@@ -97,11 +97,14 @@ class OekakiApp(QMainWindow):
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
+        main_layout = QHBoxLayout(central_widget)
         
-        # Top toolbar
-        top_toolbar = QHBoxLayout()
-        
+        # Side toolbar for settings
+        side_toolbar = QVBoxLayout()
+
+        # Adding top toolbar layout within side toolbar layout to align them side by side
+        top_toolbar = QVBoxLayout()
+
         color_button = QPushButton("Change Color")
         color_button.clicked.connect(self.change_color)
         top_toolbar.addWidget(color_button)
@@ -117,12 +120,9 @@ class OekakiApp(QMainWindow):
         save_button = QPushButton("Save")
         save_button.clicked.connect(self.save_image)
         top_toolbar.addWidget(save_button)
-        
-        main_layout.addLayout(top_toolbar)
 
-        # Side toolbar
-        side_toolbar = QVBoxLayout()
-        
+        side_toolbar.addLayout(top_toolbar)
+
         size_slider = QSlider(Qt.Orientation.Horizontal)
         size_slider.setRange(1, 50)
         size_slider.setValue(5)
@@ -155,6 +155,7 @@ class OekakiApp(QMainWindow):
 
         main_layout.addLayout(side_toolbar)
 
+        # Canvas in the center
         main_layout.addWidget(self.canvas)
 
         # Color Mixing Area
