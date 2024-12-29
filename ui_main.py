@@ -1,5 +1,6 @@
+# ui_main.py
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog, QColorDialog
 from PyQt6.QtCore import Qt
 from canvas import OekakiCanvas
 from ui_toolbar import setup_toolbar
@@ -45,6 +46,45 @@ class OekakiApp(QMainWindow):
     def set_selected_color(self, color):
       self.selected_color = color
       self.canvas.set_brush_color(color)
+
+    def change_color(self):
+      color = QColorDialog.getColor(initial=self.selected_color)
+      if color.isValid():
+          self.set_selected_color(color)
+
+    def change_brush_size(self, size):
+      self.canvas.set_brush_size(size)
+
+    def change_brush_shape(self, shape):
+      self.canvas.set_brush_shape(shape)
+    
+    def change_tool(self, tool):
+      self.canvas.set_tool(tool)
+
+    def load_custom_brush(self):
+      file_path, _ = QFileDialog.getOpenFileName(self, "Load Custom Brush", "",
+                                                   "Image Files (*.png *.jpg *.bmp);;All Files (*)")
+      if file_path:
+            self.canvas.set_custom_brush(file_path)
+
+    def change_canvas_size(self, size):
+      width, height = map(int, size.split('x'))
+      self.canvas.set_canvas_size(width, height)
+      self.set_fixed_size_based_on_canvas()
+
+    def change_ghost_opacity(self, value):
+      self.canvas.ghost_opacity = value / 100
+      
+    def toggle_ghosting(self):
+      if self.ghost_toggle_button.isChecked():
+        self.canvas.ghost_opacity = 0.2
+        self.ghost_toggle_button.setText("Ghosting On")
+      else:
+        self.canvas.ghost_opacity = 0
+        self.ghost_toggle_button.setText("Ghosting Off")
+    
+    def change_canvas_text(self, text):
+        self.canvas.text_input = text
 
     def save_image_and_label(self):
         text = self.text_input.toPlainText().strip()

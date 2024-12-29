@@ -19,19 +19,19 @@ def setup_toolbar(app, side_toolbar):
         size_slider.setRange(1, 50)
         size_slider.setValue(5)
         size_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        size_slider.valueChanged.connect(app.change_brush_size)
+        size_slider.valueChanged.connect(lambda value, this=app: this.change_brush_size(value))
         side_toolbar.addWidget(QLabel("Brush Size"))
         side_toolbar.addWidget(size_slider)
 
         shape_combo = QComboBox()
         shape_combo.addItems(["Round", "Square"])
-        shape_combo.currentTextChanged.connect(app.change_brush_shape)
+        shape_combo.currentTextChanged.connect(lambda shape, this=app: this.change_brush_shape(shape))
         side_toolbar.addWidget(QLabel("Brush Shape"))
         side_toolbar.addWidget(shape_combo)
 
         tool_combo = QComboBox()
         tool_combo.addItems(["Pencil", "Pen", "Ink", "Paint", "Airbrush", "Eraser", "Rectangle", "Blender", "Text"])
-        tool_combo.currentTextChanged.connect(app.change_tool)
+        tool_combo.currentTextChanged.connect(lambda tool, this=app: this.change_tool(tool))
         side_toolbar.addWidget(QLabel("Tool"))
         side_toolbar.addWidget(tool_combo)
 
@@ -41,7 +41,7 @@ def setup_toolbar(app, side_toolbar):
 
         canvas_size_combo = QComboBox()
         canvas_size_combo.addItems(["800x600", "1024x768", "1280x720", "1920x1080", "600x600", "512x512", "1024x1024"])
-        canvas_size_combo.currentTextChanged.connect(app.change_canvas_size)
+        canvas_size_combo.currentTextChanged.connect(lambda size, this=app: this.change_canvas_size(size))
         side_toolbar.addWidget(QLabel("Canvas Size"))
         side_toolbar.addWidget(canvas_size_combo)
         
@@ -50,7 +50,7 @@ def setup_toolbar(app, side_toolbar):
         opacity_slider.setRange(0, 100)
         opacity_slider.setValue(int(app.canvas.ghost_opacity * 100))
         opacity_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        opacity_slider.valueChanged.connect(app.change_ghost_opacity)
+        opacity_slider.valueChanged.connect(lambda value, this=app: this.change_ghost_opacity(value))
         side_toolbar.addWidget(QLabel("Ghost Opacity"))
         side_toolbar.addWidget(opacity_slider)
         
