@@ -2,8 +2,8 @@ import sys
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton,
                              QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame, QTextEdit,
-                             QMessageBox, QGridLayout, QScrollArea)
-from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QBrush, QPainterPath, QImage
+                             QMessageBox, QGridLayout, QScrollArea, QLineEdit)
+from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QBrush, QPainterPath, QImage, QFont
 from PyQt6.QtCore import Qt, QPoint, QDateTime, QSize, QPointF
 import math
 
@@ -29,6 +29,10 @@ class OekakiCanvas(QWidget):
         self.render_hint = QPainter.RenderHint.Antialiasing
         self.ghost_opacity = 0.2 # Default ghosting opacity
         self.blender_palette = [] # Added blender palette
+        self.text_input = "" # Added for text tool
+        self.font = QFont("Arial", 12)  # default font
+        self.font.setPixelSize(20)
+
 
     def paintEvent(self, event):
       canvas_painter = QPainter(self)
@@ -46,6 +50,8 @@ class OekakiCanvas(QWidget):
                 self.path.moveTo(event.position())
             elif self.tool == "blender":
               self.pick_blender_color(event.position()) # Get the color to blend.
+            elif self.tool == "text":
+                self.draw_text(event.position())
 
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.MouseButton.LeftButton and self.drawing:
@@ -116,6 +122,15 @@ class OekakiCanvas(QWidget):
 
       self.last_point = current_point
       self.update()
+    
+    def draw_text(self, current_point):
+        painter = QPainter(self.image)
+        painter.setRenderHint(self.render_hint)
+        painter.setFont(self.font)
+        painter.setPen(self.brush_color)
+        painter.drawText(current_point.toPoint(), self.text_input)
+        self.last_point = current_point
+        self.update()
 
     def draw(self, cursor_point):
       if self.tool == "pencil" or self.tool == "pen":
@@ -297,7 +312,7 @@ class OekakiApp(QMainWindow):
         side_toolbar.addWidget(shape_combo)
 
         tool_combo = QComboBox()
-        tool_combo.addItems(["Pencil", "Pen", "Ink", "Paint", "Airbrush", "Eraser", "Rectangle", "Blender"])
+        tool_combo.addItems(["Pencil", "Pen", "Ink", "Paint", "Airbrush", "Eraser", "Rectangle", "Blender", "Text"])
         tool_combo.currentTextChanged.connect(self.change_tool)
         side_toolbar.addWidget(QLabel("Tool"))
         side_toolbar.addWidget(tool_combo)
@@ -320,6 +335,12 @@ class OekakiApp(QMainWindow):
         opacity_slider.valueChanged.connect(self.change_ghost_opacity)
         side_toolbar.addWidget(QLabel("Ghost Opacity"))
         side_toolbar.addWidget(opacity_slider)
+        
+        # Ghost toggle button
+        self.ghost_toggle_button = QPushButton("Ghosting On")
+        self.ghost_toggle_button.setCheckable(True) # Add checkable so it stays down.
+        self.ghost_toggle_button.clicked.connect(self.toggle_ghosting)
+        side_toolbar.addWidget(self.ghost_toggle_button)
 
         side_toolbar.addStretch(1)
 
@@ -363,6 +384,12 @@ class OekakiApp(QMainWindow):
         self.text_input.setFixedHeight(100)  # Set a fixed height for the text box
         right_side_layout.addWidget(QLabel("Image Description:"))
         right_side_layout.addWidget(self.text_input)
+        
+        self.canvas_text_input = QLineEdit() # Add the text input method.
+        self.canvas_text_input.setPlaceholderText("Enter text here")
+        self.canvas_text_input.textChanged.connect(self.change_canvas_text)
+        right_side_layout.addWidget(QLabel("Text to Draw"))
+        right_side_layout.addWidget(self.canvas_text_input)
 
         # Save Button Area
         save_area_layout = QHBoxLayout()
@@ -439,6 +466,17 @@ class OekakiApp(QMainWindow):
     
     def change_ghost_opacity(self, value):
       self.canvas.ghost_opacity = value / 100
+      
+    def toggle_ghosting(self):
+      if self.ghost_toggle_button.isChecked():
+        self.canvas.ghost_opacity = 0.2
+        self.ghost_toggle_button.setText("Ghosting On")
+      else:
+        self.canvas.ghost_opacity = 0
+        self.ghost_toggle_button.setText("Ghosting Off")
+    
+    def change_canvas_text(self, text):
+      self.canvas.text_input = text
 
     def set_fixed_size_based_on_canvas(self):
         # Get the canvas size and set the main window size accordingly
