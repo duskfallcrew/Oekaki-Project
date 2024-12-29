@@ -1,12 +1,13 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog
 from PyQt6.QtCore import Qt
 from canvas import OekakiCanvas
 from ui_toolbar import setup_toolbar
-from ui_palette import setup_color_palette
+from ui_palette import setup_color_palette, set_selected_color
 from ui_text import setup_text_input
 from ui_blender import setup_blender_palette
 from ui_menus import setup_menus
+from data_io import save_image_and_label
 
 class OekakiApp(QMainWindow):
     def __init__(self):
@@ -45,6 +46,18 @@ class OekakiApp(QMainWindow):
       self.selected_color = color
       self.canvas.set_brush_color(color)
 
+    def save_image_and_label(self):
+        text = self.text_input.toPlainText().strip()
+        if not text:
+            QMessageBox.warning(self, "Warning", "Please add a description to the textbox.")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Image & Label", "", "PNG Files (*.png);;All Files (*)")
+
+        if file_path:
+          save_image_and_label(self.canvas, text, file_path)
+          
+
     def set_fixed_size_based_on_canvas(self):
         # Get the canvas size and set the main window size accordingly
         canvas_size = self.canvas.size()
@@ -58,3 +71,9 @@ class OekakiApp(QMainWindow):
         window_width = canvas_size.width() + side_toolbar_width + right_area_width + margin
         window_height = canvas_size.height() + top_toolbar_height + margin
         self.setMinimumSize(window_width, window_height)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = OekakiApp()
+    window.show()
+    sys.exit(app.exec())
