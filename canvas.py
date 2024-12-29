@@ -1,6 +1,8 @@
 from PyQt6.QtCore import Qt, QPoint, QDateTime, QSize, QPointF
 from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QBrush, QPainterPath, QImage, QFont
+from PyQt6.QtWidgets import QWidget
 import math
+from brushes import draw_brushes
 
 class OekakiCanvas(QWidget):
     def __init__(self):
@@ -128,61 +130,7 @@ class OekakiCanvas(QWidget):
         self.update()
 
     def draw(self, cursor_point):
-      if self.tool == "pencil" or self.tool == "pen":
-        self.draw_pencil(cursor_point)
-      if self.tool == "ink":
-        self.draw_ink(cursor_point)
-      elif self.tool == "paint":
-          self.draw_line(cursor_point)
-      elif self.tool == "airbrush" and self.custom_brush:
-        self.draw_custom_brush(cursor_point)
-      elif self.tool == "eraser":
-          self.draw_eraser(cursor_point)
-
-    def draw_pencil(self, cursor_point):
-      painter = QPainter(self.image)
-      painter.setRenderHint(self.render_hint)
-      pen = QPen(self.brush_color, self.brush_size / 2, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
-      painter.setPen(pen)
-      painter.drawPath(self.path)
-      self.last_point = cursor_point
-      self.update()
-
-    def draw_ink(self, cursor_point):
-      painter = QPainter(self.image)
-      painter.setRenderHint(self.render_hint)
-      pen = QPen(self.brush_color.darker(), self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
-      painter.setPen(pen)
-      painter.drawPath(self.path)
-      self.last_point = cursor_point
-      self.update()
-      
-    def draw_eraser(self, cursor_point):
-        painter = QPainter(self.image)
-        painter.setRenderHint(self.render_hint)
-        pen = QPen(Qt.GlobalColor.white, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
-        painter.setPen(pen)
-        painter.drawLine(self.last_point.toPoint(), cursor_point)
-        self.last_point = cursor_point
-        self.update()
-
-    def draw_line(self, cursor_point):
-      painter = QPainter(self.image)
-      painter.setRenderHint(self.render_hint)
-      pen = QPen(self.brush_color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
-      painter.setPen(pen)
-      painter.drawPath(self.path) # Use the painter path
-      self.last_point = cursor_point
-      self.update()
-    
-    def draw_custom_brush(self, cursor_point):
-        painter = QPainter(self.image)
-        brush_half_size = self.brush_size // 2
-        painter.setRenderHint(self.render_hint)
-        painter.drawPixmap(cursor_point.x() - brush_half_size, cursor_point.y() - brush_half_size,
-                            self.custom_brush.scaled(self.brush_size, self.brush_size))
-        self.last_point = cursor_point
-        self.update()
+        draw_brushes(self, cursor_point)
 
     def set_brush_color(self, color):
         self.brush_color = color
@@ -191,7 +139,10 @@ class OekakiCanvas(QWidget):
         self.brush_size = size
 
     def set_brush_shape(self, shape):
-        self.brush_shape = shape
+        if shape == "round":
+            self.brush_shape = Qt.PenCapStyle.RoundCap
+        elif shape == "square":
+            self.brush_shape = Qt.PenCapStyle.SquareCap
 
     def set_tool(self, tool):
         self.tool = tool
@@ -209,17 +160,16 @@ class OekakiCanvas(QWidget):
 
     def save_undo_state(self):
         
-        # Add basic ghosting effect
-        if len(self.canvas_history) > 0:
-          ghost_image = self.canvas_history[-1].copy()
-          ghost_painter = QPainter(ghost_image)
-          ghost_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-          ghost_painter.setOpacity(self.ghost_opacity)
-          ghost_painter.drawPixmap(self.rect(), self.image, self.image.rect())
-          ghost_painter.end()
-
-          self.image = ghost_image
-
+        if self.ghost_opacity != 0:
+          # Add basic ghosting effect
+          if len(self.canvas_history) > 0:
+            ghost_image = self.canvas_history[-1].copy()
+            ghost_painter = QPainter(ghost_image)
+            ghost_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            ghost_painter.setOpacity(self.ghost_opacity)
+            ghost_painter.drawPixmap(self.rect(), self.image, self.image.rect())
+            ghost_painter.end()
+            self.image = ghost_image
         self.canvas_history.append(self.image.copy())
         self.undo_stack.append(self.image.copy())
         if len(self.undo_stack) > 10:  # Limit undo stack to 10
