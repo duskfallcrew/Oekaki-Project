@@ -3,8 +3,9 @@ import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton,
                              QColorDialog, QSlider, QLabel, QFileDialog, QComboBox, QFrame, QTextEdit,
                              QMessageBox, QGridLayout, QScrollArea)
-from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QBrush
-from PyQt6.QtCore import Qt, QPoint, QDateTime, QSize
+from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QBrush, QPainterPath, QImage
+from PyQt6.QtCore import Qt, QPoint, QDateTime, QSize, QPointF
+import math
 
 class OekakiCanvas(QWidget):
     def __init__(self):
@@ -16,30 +17,44 @@ class OekakiCanvas(QWidget):
         self.brush_size = 5
         self.brush_color = QColor(Qt.GlobalColor.black)  # Start with a QColor
         self.brush_shape = Qt.PenCapStyle.RoundCap
-        self.last_point = QPoint()
+        self.last_point = QPointF()  # Stored as QPointF now
         self.tool = "pencil"
         self.custom_brush = None
         self.current_shape = None # Added for shapes
         self.shape_start = None # Added for shapes
         self.canvas_history = [] # Added for shape tracking
         self.canvas_history.append(self.image.copy())
+        self.path = QPainterPath() # For smooth lines
+        self.setMouseTracking(True) # Added Mouse Tracking.
+        self.render_hint = QPainter.RenderHint.Antialiasing
+        self.ghost_opacity = 0.2 # Default ghosting opacity
+        self.blender_palette = [] # Added blender palette
 
     def paintEvent(self, event):
-        canvas_painter = QPainter(self)
-        canvas_painter.drawPixmap(self.rect(), self.image, self.image.rect())
+      canvas_painter = QPainter(self)
+      canvas_painter.setRenderHint(self.render_hint) # Set antialiasing
+      canvas_painter.drawPixmap(self.rect(), self.image, self.image.rect())
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.drawing = True
-            self.last_point = event.position().toPoint()
+            self.last_point = event.position()  # Correctly set to QPointF
             self.save_undo_state() # Undo point
             if self.tool == "rectangle":
                 self.shape_start = event.position().toPoint()
+            elif self.tool in ["pencil", "pen", "ink", "paint"]: # Added new pathing for smooth lines
+                self.path.moveTo(event.position())
+            elif self.tool == "blender":
+              self.pick_blender_color(event.position()) # Get the color to blend.
 
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.MouseButton.LeftButton and self.drawing:
             if self.tool == "rectangle":
               self.draw_shape(event.position().toPoint())
+            elif self.tool in ["pencil", "pen", "ink", "paint"]:
+                self.draw_smooth_line(event.position())
+            elif self.tool == "blender":
+              self.draw_blender(event.position())
             else:
               self.draw(event.position().toPoint())
 
@@ -48,45 +63,112 @@ class OekakiCanvas(QWidget):
             self.drawing = False
             if self.tool == "rectangle":
                 self.shape_start = None # clear the point so we can make a new shape.
+            elif self.tool in ["pencil", "pen", "ink", "paint"]:
+              self.path = QPainterPath() # Clear the path
+
+    def pick_blender_color(self, position):
+      image = self.image.toImage()
+      if image and position.x() < self.image.width() and position.y() < self.image.height() and position.x() >= 0 and position.y() >= 0:
+        pixel_color = image.pixelColor(position.toPoint())
+        if len(self.blender_palette) < 10:
+          self.blender_palette.append(pixel_color)
+        else:
+          self.blender_palette.pop(0)
+          self.blender_palette.append(pixel_color)
+        self.update()
 
     def draw_shape(self, current_point):
           if self.shape_start: # if we have a previous point
             self.image = self.canvas_history[-1].copy() # set the image as the most recent image
             painter = QPainter(self.image)
+            painter.setRenderHint(self.render_hint)
             pen = QPen(self.brush_color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
             painter.setPen(pen)
             painter.setBrush(QBrush(self.brush_color)) # Set the fill color if you want
             painter.drawRect(self.shape_start.x(), self.shape_start.y(),
                              current_point.x() - self.shape_start.x(), current_point.y() - self.shape_start.y())
             self.update()
+            
+    def draw_smooth_line(self, current_point):
+      painter = QPainter(self.image)
+      painter.setRenderHint(self.render_hint)
+      pen = QPen(self.brush_color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
+      painter.setPen(pen)
+
+      control_point = (self.last_point + current_point) / 2 # Add the QPointF objects directly
+      self.path.quadTo(control_point, current_point)
+
+      painter.drawPath(self.path)
+      self.last_point = current_point # Set the last point as a QPointF
+      self.update()
+    
+    def draw_blender(self, current_point):
+      painter = QPainter(self.image)
+      painter.setRenderHint(self.render_hint)
+      
+      brush_size_pixels = self.brush_size
+      for color in self.blender_palette:
+        pen = QPen(color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
+        pen.setColor(QColor(color.red(), color.green(), color.blue(), 50))
+        painter.setPen(pen)
+        painter.drawEllipse(current_point.x() - brush_size_pixels // 2, current_point.y() - brush_size_pixels // 2,
+                            brush_size_pixels, brush_size_pixels)
+
+      self.last_point = current_point
+      self.update()
 
     def draw(self, cursor_point):
-      if self.tool == "pencil" or self.tool == "pen" or self.tool == "ink" or self.tool == "paint":
-        self.draw_line(cursor_point)
+      if self.tool == "pencil" or self.tool == "pen":
+        self.draw_pencil(cursor_point)
+      if self.tool == "ink":
+        self.draw_ink(cursor_point)
+      elif self.tool == "paint":
+          self.draw_line(cursor_point)
       elif self.tool == "airbrush" and self.custom_brush:
         self.draw_custom_brush(cursor_point)
       elif self.tool == "eraser":
           self.draw_eraser(cursor_point)
 
+    def draw_pencil(self, cursor_point):
+      painter = QPainter(self.image)
+      painter.setRenderHint(self.render_hint)
+      pen = QPen(self.brush_color, self.brush_size / 2, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
+      painter.setPen(pen)
+      painter.drawPath(self.path)
+      self.last_point = cursor_point
+      self.update()
+
+    def draw_ink(self, cursor_point):
+      painter = QPainter(self.image)
+      painter.setRenderHint(self.render_hint)
+      pen = QPen(self.brush_color.darker(), self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
+      painter.setPen(pen)
+      painter.drawPath(self.path)
+      self.last_point = cursor_point
+      self.update()
+      
     def draw_eraser(self, cursor_point):
         painter = QPainter(self.image)
+        painter.setRenderHint(self.render_hint)
         pen = QPen(Qt.GlobalColor.white, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
-        painter.drawLine(self.last_point, cursor_point)
+        painter.drawLine(self.last_point.toPoint(), cursor_point)
         self.last_point = cursor_point
         self.update()
 
     def draw_line(self, cursor_point):
-        painter = QPainter(self.image)
-        pen = QPen(self.brush_color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
-        painter.setPen(pen)
-        painter.drawLine(self.last_point, cursor_point)
-        self.last_point = cursor_point
-        self.update()
-
+      painter = QPainter(self.image)
+      painter.setRenderHint(self.render_hint)
+      pen = QPen(self.brush_color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
+      painter.setPen(pen)
+      painter.drawPath(self.path) # Use the painter path
+      self.last_point = cursor_point
+      self.update()
+    
     def draw_custom_brush(self, cursor_point):
         painter = QPainter(self.image)
         brush_half_size = self.brush_size // 2
+        painter.setRenderHint(self.render_hint)
         painter.drawPixmap(cursor_point.x() - brush_half_size, cursor_point.y() - brush_half_size,
                             self.custom_brush.scaled(self.brush_size, self.brush_size))
         self.last_point = cursor_point
@@ -116,6 +198,18 @@ class OekakiCanvas(QWidget):
         self.image.save(path, "PNG")
 
     def save_undo_state(self):
+        
+        # Add basic ghosting effect
+        if len(self.canvas_history) > 0:
+          ghost_image = self.canvas_history[-1].copy()
+          ghost_painter = QPainter(ghost_image)
+          ghost_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+          ghost_painter.setOpacity(self.ghost_opacity)
+          ghost_painter.drawPixmap(self.rect(), self.image, self.image.rect())
+          ghost_painter.end()
+
+          self.image = ghost_image
+
         self.canvas_history.append(self.image.copy())
         self.undo_stack.append(self.image.copy())
         if len(self.undo_stack) > 10:  # Limit undo stack to 10
@@ -140,6 +234,7 @@ class OekakiApp(QMainWindow):
         self.init_ui()
         self.set_fixed_size_based_on_canvas()
         self.selected_color = QColor(Qt.GlobalColor.black)
+        self.blender_colors = [] # Initialize blender colors
 
     def init_ui(self):
         central_widget = QWidget()
@@ -163,8 +258,8 @@ class OekakiApp(QMainWindow):
         for color in preset_colors:
             color_button = QPushButton()
             color_button.setFixedSize(25, 25)
-            color_button.setStyleSheet(f"background-color: {color.name()};")
-            color_button.clicked.connect(lambda c=color: self.set_selected_color(c))
+            color_button.setStyleSheet(f"background-color: {color.name};")
+            color_button.clicked.connect(lambda c=color, this=self: this.set_selected_color(c))
             self.color_buttons.append(color_button)
             color_grid.addWidget(color_button, row, col)
             col += 1
@@ -173,7 +268,7 @@ class OekakiApp(QMainWindow):
               row += 1
         color_palette_layout.addLayout(color_grid)
         side_toolbar.addLayout(color_palette_layout)
-        
+
         # Color Selection
         color_button = QPushButton("Change Color")
         color_button.clicked.connect(self.change_color)
@@ -202,7 +297,7 @@ class OekakiApp(QMainWindow):
         side_toolbar.addWidget(shape_combo)
 
         tool_combo = QComboBox()
-        tool_combo.addItems(["Pencil", "Pen", "Ink", "Paint", "Airbrush", "Eraser", "Rectangle"])
+        tool_combo.addItems(["Pencil", "Pen", "Ink", "Paint", "Airbrush", "Eraser", "Rectangle", "Blender"])
         tool_combo.currentTextChanged.connect(self.change_tool)
         side_toolbar.addWidget(QLabel("Tool"))
         side_toolbar.addWidget(tool_combo)
@@ -216,16 +311,40 @@ class OekakiApp(QMainWindow):
         canvas_size_combo.currentTextChanged.connect(self.change_canvas_size)
         side_toolbar.addWidget(QLabel("Canvas Size"))
         side_toolbar.addWidget(canvas_size_combo)
+        
+        # Ghost opacity slider
+        opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        opacity_slider.setRange(0, 100)
+        opacity_slider.setValue(int(self.canvas.ghost_opacity * 100))
+        opacity_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        opacity_slider.valueChanged.connect(self.change_ghost_opacity)
+        side_toolbar.addWidget(QLabel("Ghost Opacity"))
+        side_toolbar.addWidget(opacity_slider)
 
         side_toolbar.addStretch(1)
 
         main_layout.addLayout(side_toolbar)
 
         # Canvas in the center
-        main_layout.addWidget(self.canvas)
+        main_layout.addWidget(self.canvas, 2) # stretch factor 2 so it takes more space
 
         # Right layout for color mixing area and text input area
         right_side_layout = QVBoxLayout()
+        
+        # Blender palette area
+        blender_layout = QVBoxLayout()
+        blender_label = QLabel("Blender Palette")
+        blender_layout.addWidget(blender_label)
+        self.blender_buttons = []
+        blender_grid = QGridLayout()
+        for i in range(10):
+          blender_button = QPushButton()
+          blender_button.setFixedSize(25,25)
+          blender_button.setStyleSheet("background-color: white;")
+          blender_grid.addWidget(blender_button, i // 2, i % 2)
+          self.blender_buttons.append(blender_button)
+        blender_layout.addLayout(blender_grid)
+        right_side_layout.addLayout(blender_layout)
 
         # Color Mixing Area
         color_mixing_layout = QVBoxLayout()
@@ -252,7 +371,7 @@ class OekakiApp(QMainWindow):
         save_area_layout.addWidget(save_button)
 
         right_side_layout.addLayout(save_area_layout)
-        main_layout.addLayout(right_side_layout)
+        main_layout.addLayout(right_side_layout, 1) # stretch factor 1
 
 
     def change_color(self):
@@ -264,6 +383,11 @@ class OekakiApp(QMainWindow):
     def set_selected_color(self, color):
       self.selected_color = color
       self.canvas.set_brush_color(color)
+      # Update Color button:
+      #self.update_color_buttons() # REMOVE THIS LINE
+
+    def update_color_buttons(self):
+       pass # REMOVE ALL OF THIS METHOD
 
     def change_brush_size(self, size):
         self.canvas.set_brush_size(size)
@@ -312,6 +436,9 @@ class OekakiApp(QMainWindow):
         width, height = map(int, size.split('x'))
         self.canvas.set_canvas_size(width, height)
         self.set_fixed_size_based_on_canvas()
+    
+    def change_ghost_opacity(self, value):
+      self.canvas.ghost_opacity = value / 100
 
     def set_fixed_size_based_on_canvas(self):
         # Get the canvas size and set the main window size accordingly
@@ -325,7 +452,7 @@ class OekakiApp(QMainWindow):
         # Calculate total window size
         window_width = canvas_size.width() + side_toolbar_width + right_area_width + margin
         window_height = canvas_size.height() + top_toolbar_height + margin
-        self.setFixedSize(window_width, window_height)
+        self.setMinimumSize(window_width, window_height)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
