@@ -1,5 +1,6 @@
+# canvas.py
 from PyQt6.QtCore import Qt, QPoint, QDateTime, QSize, QPointF
-from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QBrush, QPainterPath, QImage, QFont
+from PyQt6.QtGui import QPainter, QPen, QPixmap, QColor, QBrush, QPainterPath, QImage, QFont, QCursor
 from PyQt6.QtWidgets import QWidget
 import math
 from brushes import draw_brushes
@@ -93,17 +94,7 @@ class OekakiCanvas(QWidget):
             self.update()
             
     def draw_smooth_line(self, current_point):
-      painter = QPainter(self.image)
-      painter.setRenderHint(self.render_hint)
-      pen = QPen(self.brush_color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
-      painter.setPen(pen)
-
-      control_point = (self.last_point + current_point) / 2 # Add the QPointF objects directly
-      self.path.quadTo(control_point, current_point)
-
-      painter.drawPath(self.path)
-      self.last_point = current_point # Set the last point as a QPointF
-      self.update()
+      self.draw(current_point)
     
     def draw_blender(self, current_point):
       painter = QPainter(self.image)
@@ -114,7 +105,7 @@ class OekakiCanvas(QWidget):
         pen = QPen(color, self.brush_size, Qt.PenStyle.SolidLine, self.brush_shape, Qt.PenJoinStyle.RoundJoin)
         pen.setColor(QColor(color.red(), color.green(), color.blue(), 50))
         painter.setPen(pen)
-        painter.drawEllipse(current_point.x() - brush_size_pixels // 2, current_point.y() - brush_size_pixels // 2,
+        painter.drawEllipse(int(cursor_point.x() - brush_half_size), int(cursor_point.y() - brush_half_size),
                             brush_size_pixels, brush_size_pixels)
 
       self.last_point = current_point
@@ -139,13 +130,14 @@ class OekakiCanvas(QWidget):
         self.brush_size = size
 
     def set_brush_shape(self, shape):
-        if shape == "round":
+       if shape == "round":
             self.brush_shape = Qt.PenCapStyle.RoundCap
-        elif shape == "square":
+       elif shape == "square":
             self.brush_shape = Qt.PenCapStyle.SquareCap
 
     def set_tool(self, tool):
         self.tool = tool
+        self.set_cursor_for_tool()
 
     def set_custom_brush(self, brush_path):
         self.custom_brush = QPixmap(brush_path)
@@ -159,10 +151,8 @@ class OekakiCanvas(QWidget):
         self.image.save(path, "PNG")
 
     def save_undo_state(self):
-        
-        if self.ghost_opacity != 0:
-          # Add basic ghosting effect
-          if len(self.canvas_history) > 0:
+        if self.ghost_opacity != 0 and len(self.canvas_history) > 0:
+            # Add basic ghosting effect
             ghost_image = self.canvas_history[-1].copy()
             ghost_painter = QPainter(ghost_image)
             ghost_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
@@ -170,6 +160,7 @@ class OekakiCanvas(QWidget):
             ghost_painter.drawPixmap(self.rect(), self.image, self.image.rect())
             ghost_painter.end()
             self.image = ghost_image
+        
         self.canvas_history.append(self.image.copy())
         self.undo_stack.append(self.image.copy())
         if len(self.undo_stack) > 10:  # Limit undo stack to 10
@@ -179,6 +170,12 @@ class OekakiCanvas(QWidget):
         if self.undo_stack:
             self.image = self.undo_stack.pop()
             self.update()
+    
+    def set_cursor_for_tool(self):
+        if self.tool == "text":
+          self.setCursor(Qt.CursorShape.IBeamCursor)
+        else:
+            self.setCursor(Qt.CursorShape.ArrowCursor)
 
     def set_canvas_size(self, width, height):
         self.setFixedSize(width, height)
