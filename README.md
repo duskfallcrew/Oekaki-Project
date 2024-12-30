@@ -1,20 +1,8 @@
 # Oekaki-Project
 A project opting to make an Oekaki styled program that's lightweight and open source. 
 
-New Version:
+<img width="2338" alt="Screenshot 2024-12-30 at 13 28 06" src="https://github.com/user-attachments/assets/ff9114ba-2cfa-4fe3-88a2-39eed1f809f2" />
 
-<img width="1055" alt="Screenshot 2024-12-30 at 00 03 38" src="https://github.com/user-attachments/assets/a051c217-6b81-47ae-838c-ae93cb3ccf46" />
-
-Drawing Examples:
-
-![chciken](https://github.com/user-attachments/assets/589a4a2d-b2ee-4e6c-9893-50e3e75df512)
-
-![scribbles](https://github.com/user-attachments/assets/6efdeee5-1f46-41d5-8949-9dafe1fc8a56)
-
-
-Old version: 
-
-<img width="1704" alt="Screenshot 2024-06-18 at 18 19 33" src="https://github.com/duskfallcrew/Oekaki-Project/assets/58930427/976fc5bb-35ae-4f1f-8217-5bc08687c959">
 
 ## Installation
 
@@ -36,9 +24,9 @@ Run the Application: Once the dependencies are installed, you can run the Oekaki
 
 python oekaki.py
 
-#### HELP! My canvas isn't here!
+#### HELP! MY COLORS ARE NOT WORKING
 
-Select a canvas size in the left hand toolbar, and it will automatically resize the window. Please note, the color mixing box is not implimented yet.
+Yeaaaa there's a TON of things i need to work on with this.
 
 #### Explanation:
 
